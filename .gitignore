@@ -172,3 +172,28 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# === AU-AIR Dataset (DO NOT PUSH) ===
+auair2019/
+processed_auair2019/
+
+# === Logs, EDA outputs, & Sample Visuals ===
+eda/
+wandb/
+*.log
+
+# === Python cache, Jupyter checkpoints ===
+__pycache__/
+.ipynb_checkpoints/
+*.pyc
+*.pyo
+
+# === VS Code & IDE config (if applicable) ===
+.vscode/
+.idea/
+
+# === Notebook autosaves or metadata ===
+*.ipynb_checkpoints
+
+# === Misc ===
+*.DS_Store
