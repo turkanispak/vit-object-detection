@@ -36,14 +36,16 @@ train_transform = A.Compose([
     A.RandomBrightnessContrast(p=0.5),
     A.GaussNoise(p=0.3),
     A.Affine(scale=(0.9, 1.1), translate_percent=0.05, rotate=10, p=0.5),
+    A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
     ToTensorV2()
-], bbox_params=A.BboxParams(format='pascal_voc', label_fields=['class_labels']))
+], bbox_params=A.BboxParams(format='pascal_voc', label_fields=['labels']))
 
 val_transform = A.Compose([
     A.LongestMaxSize(512),
     A.PadIfNeeded(512, 512, border_mode=0),
+    A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
     ToTensorV2()
-], bbox_params=A.BboxParams(format='pascal_voc', label_fields=['class_labels']))
+], bbox_params=A.BboxParams(format='pascal_voc', label_fields=['labels']))
 
 # --- Dataset Class ---
 class AUAirDataset(Dataset):
@@ -86,18 +88,19 @@ class AUAirDataset(Dataset):
         boxes = [[b['x_min'], b['y_min'], b['x_max'], b['y_max']] for b in bboxes]
         labels = [b['label'] for b in bboxes]
 
-        transformed = self.transform(image=img, bboxes=boxes, class_labels=labels)
+        transformed = self.transform(image=img, bboxes=boxes, labels=labels)
 
         # Convert to COCO format for DETR
-        boxes = torch.tensor(transformed['bboxes'], dtype=torch.float)
+        boxes = torch.tensor(transformed['bboxes'], dtype=torch.float).reshape(-1, 4)
         boxes[:, 2] -= boxes[:, 0]  # width
         boxes[:, 3] -= boxes[:, 1]  # height
 
         target = {
             "boxes": boxes,
-            "class_labels": torch.tensor(transformed['class_labels'], dtype=torch.long),
+            "labels": torch.tensor(transformed['labels'], dtype=torch.long),
             "image_id": torch.tensor([idx])
         }
+
 
         return {
             "pixel_values": transformed['image'],
@@ -125,7 +128,7 @@ def visualize_sample(dataset, idx):
     img = Image.fromarray(img)
     draw = ImageDraw.Draw(img)
 
-    for box, label in zip(labels['boxes'], labels['class_labels']):
+    for box, label in zip(labels['boxes'], labels['labels']):
         x, y, w, h = box.tolist()
         draw.rectangle([x, y, x+w, y+h], outline='red', width=2)
         draw.text((x, y-10), f"Class {label.item()}", fill='yellow')
